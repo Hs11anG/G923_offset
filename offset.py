@@ -15,7 +15,7 @@ def random_turn_controller(controller):
     correction_threshold = 5.0  # 校正時回到 pre_angle 的正負範圍
     offset_threshold = 6.0  # 偏移角度需超過的閾值
     straight_duration_min = 5.0  # 直行時間最小值
-    straight_duration_max = 6.0  # 直行時間最大值
+    straight_duration_max = 10.0  # 直行時間最大值
     force_duration = 0.3  # 力的持續時間
     applying_force = False
     force_start_time = 0
@@ -23,8 +23,8 @@ def random_turn_controller(controller):
     change_degree = 120  # 拉的角度
     damp_force = 50  # 阻尼力道
     force_magnitude = 100  # 彈簧力力道
-    force_slope = 80  # 力回饋斜率
-    throttle_threshold = 0.9  # 油門閾值
+    force_slope = 60  # 力回饋斜率
+    throttle_threshold = 0.1  # 油門閾值
     throttle_delay = 1.0  # 油門踩下後的延遲時間
     last_throttle_press_time = 0  # 上次油門踩下的時間
     
@@ -32,14 +32,6 @@ def random_turn_controller(controller):
     log_data = []
     excel_filename = f"steering_log_{datetime.now().strftime('%Y%m%d_%H_%M')}.xlsx"
 
-    #保證方向盤運作正常
-    for i in range(-50, 0, 2):
-        controller.LogiPlaySpringForce(0, i, 100, 40)
-        controller.logi_update()
-        time.sleep(0.1)
-    controller.steering_initialize()
-    controller.LogiStopSpringForce(0)
-    controller.logi_update()
     # 檢查方向盤旋轉範圍
     range_val = ctypes.c_int()
     if controller.get_operating_range(0, range_val):
@@ -55,7 +47,7 @@ def random_turn_controller(controller):
     print("已啟用阻尼力，提供持續阻力。")
 
     print("\n---Logitech 隨機轉向測試 (80 度)---")
-    print(f"當油門踩下 (< {throttle_threshold}) 並直行 5-10 秒 (± {straight_threshold} 度) 後，方向盤將隨機轉向 80 度。")
+    print(f"當油門踩下 (> {throttle_threshold}) 並直行 5-10 秒 (± {straight_threshold} 度) 後，方向盤將隨機轉向 80 度。")
 
     try:
         while True:
@@ -141,31 +133,31 @@ def random_turn_controller(controller):
 
                     # 儲存記錄
                     log_entry = {
-                        "前角度 (度)": pre_angle,
-                        "起始角度 (度)": start_angle,
-                        "偏移角度 (度)": offset_angle,
-                        "最終角度 (度)": final_angle,
+                        "Pre Angle (degrees)": pre_angle,
+                        "Start Angle (degrees)": start_angle,
+                        "Offset Angle (degrees)": offset_angle,
+                        "Final Angle (degrees)": final_angle,
                         "FAIL_OFFSET": fail_offset,
-                        "反應時間 (秒)": reaction_time,
-                        "Delta (度)": delta,
-                        "反應時間/Delta (秒/度)": reaction_time_per_delta,
-                        "0.1秒角度": angles_at_intervals[0],
-                        "0.2秒角度": angles_at_intervals[1],
-                        "0.3秒角度": angles_at_intervals[2],
-                        "0.4秒角度": angles_at_intervals[3],
-                        "0.5秒角度": angles_at_intervals[4],
+                        "Reaction Time (s)": reaction_time,
+                        "Delta (degrees)": delta,
+                        "Reaction Time/Delta (s/degree)": reaction_time_per_delta,
+                        "Angle at 0.1s": angles_at_intervals[0],
+                        "Angle at 0.2s": angles_at_intervals[1],
+                        "Angle at 0.3s": angles_at_intervals[2],
+                        "Angle at 0.4s": angles_at_intervals[3],
+                        "Angle at 0.5s": angles_at_intervals[4],
                         "": "",  # 空白欄
-                        "0.00秒角度": fine_angles[0],
-                        "0.05秒角度": fine_angles[1],
-                        "0.10秒角度": fine_angles[2],
-                        "0.15秒角度": fine_angles[3],
-                        "0.20秒角度": fine_angles[4],
-                        "0.25秒角度": fine_angles[5],
-                        "0.30秒角度": fine_angles[6],
-                        "0.35秒角度": fine_angles[7],
-                        "0.40秒角度": fine_angles[8],
-                        "0.45秒角度": fine_angles[9],
-                        "0.50秒角度": fine_angles[10],
+                        "Angle at 0.00s": fine_angles[0],
+                        "Angle at 0.05s": fine_angles[1],
+                        "Angle at 0.10s": fine_angles[2],
+                        "Angle at 0.15s": fine_angles[3],
+                        "Angle at 0.20s": fine_angles[4],
+                        "Angle at 0.25s": fine_angles[5],
+                        "Angle at 0.30s": fine_angles[6],
+                        "Angle at 0.35s": fine_angles[7],
+                        "Angle at 0.40s": fine_angles[8],
+                        "Angle at 0.45s": fine_angles[9],
+                        "Angle at 0.50s": fine_angles[10],
                     }
                     log_data.append(log_entry)
                     print(f"記錄條目: {log_entry}")
@@ -193,7 +185,7 @@ def random_turn_controller(controller):
             pre_angle = current_angle  # 記錄當前角度作為 pre_angle
 
             # 檢查油門狀態
-            if throttle_value < throttle_threshold:
+            if throttle_value > throttle_threshold:
                 if last_throttle_press_time == 0:
                     last_throttle_press_time = current_time
                     print(f"油門被踩下，值: {throttle_value:.2f}，開始計時")
